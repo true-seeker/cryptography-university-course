@@ -36,10 +36,14 @@ def encrypt_message(message: str, key: str) -> str:
 
     print(f'message: {message}')
     print(f'encrypted_message: {encrypted_message}')
+    encrypted_bytes = ''
+    for i in encrypted_message:
+        encrypted_bytes += convert_python_bin(bin(ord(i)))
+    print(f'encrypted bytes: {encrypted_bytes}')
     return encrypted_message
 
 
 if __name__ == '__main__':
-    input_message = '1337'
-    input_key = '25'
+    input_message = '76'
+    input_key = '99'
     encrypted = encrypt_message(input_message, input_key)
