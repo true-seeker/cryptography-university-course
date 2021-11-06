@@ -24,6 +24,22 @@ curve = EllipticCurve(
     h=1,
 )
 
+def egcd(a: int, b: int):
+    """Расширенный алгоритм Евклида"""
+    if a == 0:
+        return (b, 0, 1)
+    else:
+        b_div_a, b_mod_a = divmod(b, a)
+        g, x, y = egcd(b_mod_a, a)
+        return (g, y - b_div_a * x)
+
+
+def modinv(a: int, b: int) -> int:
+    """Обратное по модулю"""
+    g, x, _ = egcd(a, b)
+    if g != 1:
+        raise Exception('gcd(a, b) != 1')
+    return x % b
 
 def inverse_mod(k, p):
     """Returns the inverse of k modulo p.
@@ -107,6 +123,8 @@ def point_add(point1, point2):
         m = (3 * x1 * x1 + curve.a) * inverse_mod(2 * y1, curve.p)
     else:
         # This is the case point1 != point2.
+        print(inverse_mod(x1 - x2, curve.p))
+        print(modinv(x1 - x2, curve.p))
         m = (y1 - y2) * inverse_mod(x1 - x2, curve.p)
 
     x3 = m * m - x1 - x2
