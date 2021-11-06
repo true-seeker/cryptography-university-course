@@ -24,26 +24,26 @@ curve = EllipticCurve(
     h=1,
 )
 
+
 def egcd(a: int, b: int):
     """Расширенный алгоритм Евклида"""
     if a == 0:
-        return (b, 0, 1)
+        return b, 0, 1
     else:
         b_div_a, b_mod_a = divmod(b, a)
         g, x, y = egcd(b_mod_a, a)
-        return (g, y - b_div_a * x)
+        return g, y - b_div_a * x, x
 
 
 def modinv(a: int, b: int) -> int:
     """Обратное по модулю"""
     g, x, _ = egcd(a, b)
-    if g != 1:
-        raise Exception('gcd(a, b) != 1')
+    assert g == 1
     return x % b
 
+
 def inverse_mod(k, p):
-    """Returns the inverse of k modulo p.
-    """
+    """Returns the inverse of k modulo p"""
     if k == 0:
         raise ZeroDivisionError('division by zero')
 
