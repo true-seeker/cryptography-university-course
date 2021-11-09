@@ -1,15 +1,6 @@
 import random
 
 
-class EllipticCurve:
-    def __init__(self, p, a, b, g, n):
-        self.n = n
-        self.g = g
-        self.b = b
-        self.a = a
-        self.p = p
-
-
 class Point:
     def __init__(self, x, y):
         self.y = y
@@ -20,13 +11,94 @@ class Point:
             return True
         return False
 
+    def scalar_mult(self, k):
+        """Умножение k на точку"""
+        assert self.is_on_curve()
 
-curve = EllipticCurve(
-    p=0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f,
-    a=1,
-    b=3,
-    g=Point(1, 13),
-    n=0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141)
+        if k % curve.n == 0 or self is None:
+            return None
+
+        if k < 0:
+            return self.point_neg().scalar_mult(-k)
+
+        addend = self
+        result = addend
+
+        while k:
+
+            if k & 1:
+                result = result + addend
+
+            addend = addend + addend
+
+            k >>= 1
+
+        assert result.is_on_curve()
+
+        return result
+
+    def is_on_curve(self):
+        global curve
+        """Проверка принадлежности точки кривой"""
+        if self is None:
+            return True
+        x, y = self.x, self.y
+        return (y * y - x * x * x - curve.a * x - curve.b) % curve.p == 0
+
+    def __add__(self, other):
+        """Сложение двух точек"""
+        assert self.is_on_curve()
+        assert other.is_on_curve()
+
+        if self is None:
+            return other
+        if other is None:
+            return self
+
+        x1, y1 = self.x, self.y
+        x2, y2 = other.x, other.y
+
+        if x1 == x2 and y1 != y2:
+            return None
+
+        if x1 == x2:
+            m = (3 * x1 * x1 + curve.a) * modinv(2 * y1, curve.p)
+        else:
+            m = (y1 - y2) * modinv(x1 - x2, curve.p)
+
+        x3 = m * m - x1 - x2
+        y3 = y1 + m * (x3 - x1)
+        result = Point(x3 % curve.p, -y3 % curve.p)
+
+        assert result.is_on_curve()
+
+        return result
+
+    def point_neg(self):
+        """Нахождение обратной точки"""
+        assert self.is_on_curve()
+
+        if self is None:
+            return None
+
+        x, y = self.x, self.y
+        result = Point(x, -y % curve.p)
+
+        assert result.is_on_curve()
+
+        return result
+
+    def __str__(self):
+        return f'({self.x};{self.y})'
+
+
+class EllipticCurve:
+    def __init__(self, a, b, g):
+        self.p = 41
+        self.g = g
+        self.b = b
+        self.a = a
+        self.n = 4
 
 
 def egcd(a: int, b: int):
@@ -50,92 +122,17 @@ def modinv(a: int, b: int) -> int:
     return x % b
 
 
-def is_on_curve(point: Point):
-    """Проверка принадлежности точки кривой"""
-    if point is None:
-        return True
-    x, y = point.x, point.y
-
-    return (y * y - x * x * x - curve.a * x - curve.b) % curve.p == 0
-
-
-def point_neg(point: Point):
-    """Нахождение обратной точки"""
-    assert is_on_curve(point)
-
-    if point is None:
-        return None
-
-    x, y = point.x, point.y
-    result = Point(x, -y % curve.p)
-
-    assert is_on_curve(result)
-
-    return result
-
-
-def point_add(point1: Point, point2: Point):
-    """Сложение двух точек"""
-    assert is_on_curve(point1)
-    assert is_on_curve(point2)
-
-    if point1 is None:
-        return point2
-    if point2 is None:
-        return point1
-
-    x1, y1 = point1.x, point1.y
-    x2, y2 = point2.x, point2.y
-
-    if x1 == x2 and y1 != y2:
-        return None
-
-    if x1 == x2:
-        m = (3 * x1 * x1 + curve.a) * modinv(2 * y1, curve.p)
-    else:
-        m = (y1 - y2) * modinv(x1 - x2, curve.p)
-
-    x3 = m * m - x1 - x2
-    y3 = y1 + m * (x3 - x1)
-    result = Point(x3 % curve.p, -y3 % curve.p)
-
-    assert is_on_curve(result)
-
-    return result
-
-
-def scalar_mult(k, point: Point):
-    """Умножение k на точку"""
-    assert is_on_curve(point)
-
-    if k % curve.n == 0 or point is None:
-        return None
-
-    if k < 0:
-        return scalar_mult(-k, point_neg(point))
-
-    result = None
-    addend = point
-
-    while k:
-        if k & 1:
-            result = point_add(result, addend)
-
-        addend = point_add(addend, addend)
-
-        k >>= 1
-
-    assert is_on_curve(result)
-
-    return result
-
-
 def make_keypair():
     private_key = random.randrange(1, curve.n)
-    public_key = scalar_mult(private_key, curve.g)
+    public_key = curve.g.scalar_mult(private_key)
 
     return private_key, public_key
 
+
+curve = EllipticCurve(
+    a=1,
+    b=3,
+    g=Point(1, 13))
 
 alice_private_key, alice_public_key = make_keypair()
 print(f"Закрытый ключ А: {hex(alice_private_key)}")
@@ -145,7 +142,7 @@ bob_private_key, bob_public_key = make_keypair()
 print(f"Закрытый ключ B: {hex(bob_private_key)}")
 print(f"Открытый ключ B: ({hex(bob_public_key.x)}, {hex(bob_public_key.y)})\n")
 
-s1 = scalar_mult(alice_private_key, bob_public_key)
-s2 = scalar_mult(bob_private_key, alice_public_key)
+s1 = bob_public_key.scalar_mult(alice_private_key)
+s2 = alice_public_key.scalar_mult(bob_private_key)
 assert s1 == s2
-print(f'Вычисленный секрет от А и от Б: ({hex(s1.x)}, {hex(s1.y)})')
+print(f'Вычисленный секрет от А и от Б: ({hex(s1.x)}, {hex(s2.x)})')
