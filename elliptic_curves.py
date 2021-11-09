@@ -2,16 +2,12 @@ import random
 
 
 class EllipticCurve:
-    def __init__(self, name, p, a, b, g, n, h):
+    def __init__(self, p, a, b, g, n):
         self.n = n
-        self.h = h
         self.g = g
         self.b = b
         self.a = a
         self.p = p
-        self.name = name
-
-        print(name)
 
 
 class Point:
@@ -26,14 +22,11 @@ class Point:
 
 
 curve = EllipticCurve(
-    name='secp256k1',
     p=0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f,
-    a=0,
-    b=7,
-    g=Point(0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798,
-            0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8),
-    n=0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141,
-    h=1)
+    a=1,
+    b=3,
+    g=Point(1, 13),
+    n=0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141)
 
 
 def egcd(a: int, b: int):
