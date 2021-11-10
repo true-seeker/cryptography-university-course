@@ -93,8 +93,8 @@ class Point:
 
 
 class EllipticCurve:
-    def __init__(self, a, b, g):
-        self.p = 41
+    def __init__(self, a, b, g, p):
+        self.p = p
         self.g = g
         self.b = b
         self.a = a
@@ -132,17 +132,22 @@ def make_keypair():
 curve = EllipticCurve(
     a=1,
     b=3,
-    g=Point(1, 13))
+    g=Point(1, 13),
+    p=41)
 
 alice_private_key, alice_public_key = make_keypair()
-print(f"Закрытый ключ А: {hex(alice_private_key)}")
-print(f"Открытый ключ А: ({hex(alice_public_key.x)}, {hex(alice_public_key.y)})\n")
 
-bob_private_key, bob_public_key = make_keypair()
-print(f"Закрытый ключ B: {hex(bob_private_key)}")
-print(f"Открытый ключ B: ({hex(bob_public_key.x)}, {hex(bob_public_key.y)})\n")
+alice_private_key = 1
+alice_public_key = Point(7, 5)
+print(f"Закрытый ключ А: {alice_private_key}")
+print(f"Открытый ключ А: ({alice_public_key.x}, {alice_public_key.y})\n")
+
+# bob_private_key, bob_public_key = make_keypair()
+# print(f"Закрытый ключ B: {bob_private_key}")
+# print(f"Открытый ключ B: ({bob_public_key.x}, {bob_public_key.y})\n")
+
+bob_public_key = Point(27, 19)
 
 s1 = bob_public_key.scalar_mult(alice_private_key)
-s2 = alice_public_key.scalar_mult(bob_private_key)
-assert s1 == s2
-print(f'Вычисленный секрет от А и от Б: ({hex(s1.x)}, {hex(s2.x)})')
+# s2 = alice_public_key.scalar_mult(bob_private_key)
+print(f'Вычисленный секрет от А и от Б: ({s1})')
