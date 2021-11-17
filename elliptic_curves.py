@@ -12,67 +12,55 @@ class Point:
         return False
 
     def scalar_mult(self, k):
-        """Умножение k на точку"""
-        assert self.is_on_curve()
-
-        if k % curve.n == 0 or self is None:
-            return None
-
-        if k < 0:
-            return self.point_neg().scalar_mult(-k)
-
-        addend = self
-        result = addend
-
-        while k:
-
-            if k & 1:
-                result = result + addend
-
-            addend = addend + addend
-
-            k >>= 1
-
-        assert result.is_on_curve()
-
-        return result
+        res = self
+        for i in range(k - 1):
+            res += self
+        return res
 
     def is_on_curve(self):
         global curve
-        """Проверка принадлежности точки кривой"""
-        if self is None:
+        if self.x == 0 and self.y == 0:
             return True
+        """Проверка принадлежности точки кривой"""
         x, y = self.x, self.y
         return (y * y - x * x * x - curve.a * x - curve.b) % curve.p == 0
 
     def __add__(self, other):
         """Сложение двух точек"""
-        assert self.is_on_curve()
-        assert other.is_on_curve()
-
-        if self is None:
+        if self.x == 0 and self.y == 0:
             return other
-        if other is None:
+        if other.x == 0 and other.y == 0:
             return self
 
         x1, y1 = self.x, self.y
         x2, y2 = other.x, other.y
 
-        if x1 == x2 and y1 != y2:
-            return None
-
-        if x1 == x2:
-            m = (3 * x1 * x1 + curve.a) * modinv(2 * y1, curve.p)
+        if x1 == x2 and y1 == y2:
+            l = (3 * x1 * x1 + curve.a) * modinv(2 * y1, curve.p)
         else:
-            m = (y1 - y2) * modinv(x1 - x2, curve.p)
+            l = pow(y2 - y1, 1, curve.p) * modinv(x2 - x1, curve.p)
+        x3 = pow(l * l - x1 - x2, 1, curve.p)
+        y3 = pow(l * (x1 - x3) - y1, 1, curve.p)
 
-        x3 = m * m - x1 - x2
-        y3 = y1 + m * (x3 - x1)
-        result = Point(x3 % curve.p, -y3 % curve.p)
+        try:
+            assert Point(x3, y3).is_on_curve()
+        except AssertionError:
+            return Point(0, 0)
+        return Point(x3, y3)
 
-        assert result.is_on_curve()
-
-        return result
+    def __sub__(self, other):
+        if self == Point(0, 0):
+            k = 13
+        else:
+            k = curve.R.index(self) + 1
+        if other == Point(0, 0):
+            k1 = 13
+        else:
+            k1 = curve.R.index(other) + 1
+        ind = k - k1 - 1
+        if ind < 0:
+            ind = order + ind
+        return curve.R[ind]
 
     def point_neg(self):
         """Нахождение обратной точки"""
@@ -93,12 +81,23 @@ class Point:
 
 
 class EllipticCurve:
-    def __init__(self, a, b, g, p):
+    def __init__(self, a, b, g, p, n):
         self.p = p
         self.g = g
         self.b = b
         self.a = a
-        self.n = 4
+        self.n = n
+
+    def make_ring(self):
+        t = self.g
+        self.R = [t, ]
+        print(t, end=" ")
+        for i in range(self.n - 2):
+            # for i in range(50):
+            t += self.g
+            print(t, end=" ")
+            self.R.append(t)
+        self.R.append(Point(0, 0))
 
 
 def egcd(a: int, b: int):
@@ -118,12 +117,14 @@ def modinv(a: int, b: int) -> int:
         x *= -1
         g *= -1
 
-    assert g == 1
     return x % b
 
 
+order = 13
+
+
 def make_keypair():
-    private_key = random.randrange(1, curve.n)
+    private_key = random.randrange(1, order - 1)
     public_key = curve.g.scalar_mult(private_key)
 
     return private_key, public_key
@@ -132,22 +133,38 @@ def make_keypair():
 curve = EllipticCurve(
     a=1,
     b=3,
-    g=Point(1, 13),
-    p=41)
+    g=Point(1, order),
+    p=41,
+    n=order)
+curve.make_ring()
 
-alice_private_key, alice_public_key = make_keypair()
+letter = 'a'
+t = curve.g
+points_dict = {letter: t}
+letters_dict = {(t.x, t.y): letter}
+for i in range(order - 2):
+    t += curve.g
+    letter = chr(ord(letter) + 1)
+    points_dict[letter] = t
+    letters_dict[(t.x, t.y)] = letter
+message = 'abcabcbacbacbacbabcabcabcbacbacbabcabcbacba'
 
-alice_private_key = 1
-alice_public_key = Point(7, 5)
-print(f"Закрытый ключ А: {alice_private_key}")
-print(f"Открытый ключ А: ({alice_public_key.x}, {alice_public_key.y})\n")
+count = 0
+for j in range(1):
+    # s = []
+    bob_private_key, bob_public_key = make_keypair()
+    print(f"Закрытый ключ B: {bob_private_key}")
+    print(f"Открытый ключ B: ({bob_public_key.x}, {bob_public_key.y})\n")
+    for i in message:
+        Pm = points_dict[i]
 
-# bob_private_key, bob_public_key = make_keypair()
-# print(f"Закрытый ключ B: {bob_private_key}")
-# print(f"Открытый ключ B: ({bob_public_key.x}, {bob_public_key.y})\n")
-
-bob_public_key = Point(27, 19)
-
-s1 = bob_public_key.scalar_mult(alice_private_key)
-# s2 = alice_public_key.scalar_mult(bob_private_key)
-print(f'Вычисленный секрет от А и от Б: ({s1})')
+        k = random.randint(1, order)
+        Cm = Point(curve.g.scalar_mult(k), Pm + (bob_public_key.scalar_mult(k)))
+        # дешифрование
+        a = Cm.y - Cm.x.scalar_mult(bob_private_key)
+        print(letters_dict[(a.x, a.y)], end="")
+        # s.append(a)
+    # if s[0] != Point(1, 13) or s[1] != Point(7, 5) or s[2] != Point(12, 29):
+    #     print(s[0], s[1], s[2])
+    #     count += 1
+# print('не прошел', count)
