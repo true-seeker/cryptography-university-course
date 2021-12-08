@@ -59,7 +59,7 @@ class Point:
             k1 = curve.R.index(other) + 1
         ind = k - k1 - 1
         if ind < 0:
-            ind = order + ind
+            ind = ORDER + ind
         return curve.R[ind]
 
     def point_neg(self):
@@ -91,11 +91,11 @@ class EllipticCurve:
     def make_ring(self):
         t = self.g
         self.R = [t, ]
-        print(t, end=" ")
+        # print(t, end=" ")
         for i in range(self.n - 2):
             # for i in range(50):
             t += self.g
-            print(t, end=" ")
+            # print(t, end=" ")
             self.R.append(t)
         self.R.append(Point(0, 0))
 
@@ -120,51 +120,54 @@ def modinv(a: int, b: int) -> int:
     return x % b
 
 
-order = 13
+ORDER = 13
 
 
 def make_keypair():
-    private_key = random.randrange(1, order - 1)
+    private_key = random.randrange(1, ORDER - 1)
     public_key = curve.g.scalar_mult(private_key)
 
     return private_key, public_key
 
 
-curve = EllipticCurve(
-    a=1,
-    b=3,
-    g=Point(1, order),
-    p=41,
-    n=order)
-curve.make_ring()
+if __name__ == '__main__':
 
-letter = 'a'
-t = curve.g
-points_dict = {letter: t}
-letters_dict = {(t.x, t.y): letter}
-for i in range(order - 2):
-    t += curve.g
-    letter = chr(ord(letter) + 1)
-    points_dict[letter] = t
-    letters_dict[(t.x, t.y)] = letter
-message = 'abcabcbacbacbacbabcabcabcbacbacbabcabcbacba'
+    curve = EllipticCurve(
+        a=1,
+        b=3,
+        g=Point(1, ORDER),
+        p=41,
+        n=ORDER)
+    curve.make_ring()
 
-count = 0
-for j in range(1):
-    # s = []
-    bob_private_key, bob_public_key = make_keypair()
-    print(f"Закрытый ключ B: {bob_private_key}")
-    print(f"Открытый ключ B: ({bob_public_key.x}, {bob_public_key.y})\n")
-    for i in message:
-        Pm = points_dict[i]
+    letter = 'a'
+    t = curve.g
+    points_dict = {letter: t}
+    letters_dict = {(t.x, t.y): letter}
+    for i in range(ORDER - 2):
+        t += curve.g
+        letter = chr(ord(letter) + 1)
+        points_dict[letter] = t
+        letters_dict[(t.x, t.y)] = letter
+    print('\nАлфавит', letters_dict)
 
-        k = random.randint(1, order)
-        Cm = Point(curve.g.scalar_mult(k), Pm + (bob_public_key.scalar_mult(k)))
-        # дешифрование
-        a = Cm.y - Cm.x.scalar_mult(bob_private_key)
-        print(letters_dict[(a.x, a.y)], end="")
-        # s.append(a)
-    # if s[0] != Point(1, 13) or s[1] != Point(7, 5) or s[2] != Point(12, 29):
-    #     print(s[0], s[1], s[2])
-    #     count += 1
-# print('не прошел', count)
+
+    message = 'efabjkl'
+    decrypted_message = ''
+    count = 0
+    for j in range(1):
+        bob_private_key, bob_public_key = make_keypair()
+        print(f"Закрытый ключ B: {bob_private_key}")
+        print(f"Открытый ключ B: ({bob_public_key.x}, {bob_public_key.y})\n")
+        for i in message:
+            Pm = points_dict[i]
+
+            k = random.randint(1, ORDER)
+            # шифрование
+            Cm = Point(curve.g.scalar_mult(k), Pm + (bob_public_key.scalar_mult(k)))
+            # расшифрование
+            a = Cm.y - Cm.x.scalar_mult(bob_private_key)
+            decrypted_message += letters_dict[(a.x, a.y)]
+
+    print(f'Расшифрованное сообщение: {decrypted_message}')
+    assert message == decrypted_message
