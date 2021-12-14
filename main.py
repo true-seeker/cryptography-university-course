@@ -106,7 +106,6 @@ class StribogHash:
         h = list(0 for _ in range(HASH_LENGTH))
         sigma = list(0 for _ in range(HASH_LENGTH))
         message = list(0 for _ in range(HASH_LENGTH))
-        # iv = (0 for _ in range(HASH_LENGTH))
         v_512 = get_bytes(512)
         v_512 = list(0 for _ in range(HASH_LENGTH - len(v_512))) + v_512
         N_0 = list(0 for _ in range(HASH_LENGTH))
@@ -115,8 +114,8 @@ class StribogHash:
             if len(message) == HASH_LENGTH:
 
                 h = g_transformation(N, h, message)
-                N = hash_add_512(N, v_512)
-                sigma = hash_add_512(sigma, message)
+                N = add_modulo_512(N, v_512)
+                sigma = add_modulo_512(sigma, message)
                 mes_len = get_bytes(len(message) * 8)
                 mes_len = list(0 for _ in range(HASH_LENGTH - len(mes_len))) + mes_len
             else:
@@ -125,8 +124,8 @@ class StribogHash:
 
                 message = list(0 for _ in range(HASH_LENGTH - len(message) - 1)) + [1, ] + message
         h = g_transformation(N, h, message)
-        N = hash_add_512(N, mes_len)
-        sigma = hash_add_512(sigma, message)
+        N = add_modulo_512(N, mes_len)
+        sigma = add_modulo_512(sigma, message)
         h = g_transformation(N_0, h, N)
         h = g_transformation(N_0, h, sigma)
         return h
@@ -186,7 +185,7 @@ def x_transformation(a, b):
 
 
 @params_info
-def hash_add_512(a, b):
+def add_modulo_512(a, b):
     assert len(a) == len(b)
     t = 0
     result = list(0 for _ in range(HASH_LENGTH))
@@ -286,9 +285,11 @@ def l_transformation(state):
                 bined = '0' * (8 - len(bined)) + bined
             for j in bined:
                 temp.append(int(j))
+
         for j in range(len(temp)):
             if temp[j] != 0:
                 t = t ^ A[j]
+
         res = get_bytes(t)
         result += res
     assert len(result) == HASH_LENGTH
@@ -334,8 +335,9 @@ def get_bytes(a):
 
 
 if __name__ == '__main__':
-    message = 0x323130393837363534333231303938373635343332313039383736353433323130393837363534333231303938373635343332313039383736353433323130
+    # message = 0x323130393837363534333231303938373635343332313039383736353433323130393837363534333231303938373635343332313039383736353433323130
     message = 0xfbe2e5f0eee3c820fbeafaebef20fffbf0e1e0f0f520e0ed20e8ece0ebe5f0f2f120fff0eeec20f120faf2fee5e2202ce8f6f3ede220e8e6eee1e8f0f2d1202ce8f0f2e5e220e5d1
+    # message = 0x4b654a6c
     sh = StribogHash(message)
     h = sh.hash()
     pretty_print_hex(h)
