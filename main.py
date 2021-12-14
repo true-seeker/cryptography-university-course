@@ -123,16 +123,12 @@ class StribogHash:
                 mes_len = get_bytes(len(message) * 8)
                 mes_len = list(0 for _ in range(HASH_LENGTH - len(mes_len))) + mes_len
 
-                # print(len(mes_len))
-                # print(mes_len)
-                # mes_len.reverse()
                 message = list(0 for _ in range(HASH_LENGTH - len(message) - 1)) + [1, ] + message
         h = g_transformation(N, h, message)
         N = hash_add_512(N, mes_len)
         sigma = hash_add_512(sigma, message)
         h = g_transformation(N_0, h, N)
         h = g_transformation(N_0, h, sigma)
-
         return h
 
 
@@ -154,7 +150,7 @@ def params_info(function_to_decorate):
 def pretty_print_hex(result):
     # print(len(result), end=", ")
     for i in result:
-        print('0' * (2 - len(hex(i)[2:])) + hex(i)[2:], end=", ")
+        print('0' * (2 - len(hex(i)[2:])) + hex(i)[2:], end="")
     print()
 
 
@@ -180,7 +176,6 @@ def hash_get_key(K, i):
 @params_info
 def x_transformation(a, b):
     assert len(a) == len(b)
-
     result = []
     for i in range(HASH_LENGTH):
         result.append(a[i] ^ b[i])
@@ -306,13 +301,10 @@ def e_transformation(K, m):
     state = x_transformation(K, m)
 
     for i in range(12):
-        # print(i + 1)
         state = s_transformation(state)
         state = p_transformation(state)
         state = l_transformation(state)
         K = hash_get_key(K, i)
-        # pretty_print_hex(K)
-
         state = x_transformation(state, K)
     return state
 
@@ -326,7 +318,6 @@ def g_transformation(N, h, m):
     t = e_transformation(K, m)
     t = x_transformation(t, h)
     t = x_transformation(t, m)
-
     return t
 
 

@@ -13,7 +13,7 @@ media
 ### Linux ###
 *~
 
-# temporary files which can be created if a process still has a handle open of a deleted file
+# temporary files which can be created if p process still has p handle open of p deleted file
 .fuse_hidden*
 
 # KDE directory preferences
@@ -36,7 +36,7 @@ Icon
 # Thumbnails
 ._*
 
-# Files that might appear in the root of a volume
+# Files that might appear in the root of p volume
 .DocumentRevisions-V100
 .fseventsd
 .Spotlight-V100
@@ -142,7 +142,7 @@ wheels/
 *.egg
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
+#  Usually these files are written by p python script from p template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
