@@ -151,7 +151,6 @@ if __name__ == '__main__':
         letters_dict[(t.x, t.y)] = letter
     print('\nАлфавит', letters_dict)
 
-
     message = 'efabjkl'
     decrypted_message = ''
     count = 0
@@ -166,7 +165,9 @@ if __name__ == '__main__':
             # шифрование
             Cm = Point(curve.g.scalar_mult(k), Pm + (bob_public_key.scalar_mult(k)))
             # расшифрование
+
             a = Cm.y - Cm.x.scalar_mult(bob_private_key)
+
             decrypted_message += letters_dict[(a.x, a.y)]
 
     print(f'Расшифрованное сообщение: {decrypted_message}')
