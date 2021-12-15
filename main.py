@@ -1,7 +1,5 @@
-SYMBOL_SIZE = 1
 BLOCK_SIZE = 16
 nb = 4
-STATE_SIZE = 16
 KEY_SIZE = 32
 nk = 4
 nr = 10
@@ -37,7 +35,6 @@ class AES:
         0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
         0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
     ]
-
     inv_s_box = [
         0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
         0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
@@ -56,7 +53,6 @@ class AES:
         0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61,
         0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
     ]
-
     r_con = [
         [0x00, 0x00, 0x00, 0x00],
         [0x01, 0x00, 0x00, 0x00],
@@ -81,45 +77,47 @@ class AES:
                 t.append(ord(j))
             self.message_list.append(t)
         print(self.message_list)
-        print(self.message_list[0])
-        abobus = encrypt(self.message_list[0], self.key)
-        print(abobus)
+        for mes in self.message_list:
+            print(mes)
+            abobus = encrypt(mes, self.key)
+            print(abobus)
+            amogus = decrypt(abobus, self.key)
+            print(amogus)
+            print()
 
 
 def key_expansion(key):
     key_symbols = [ord(symbol) for symbol in key]
 
-    # ChipherKey shoul contain 16 symbols to fill 4*Nk table. If it's less
-    # complement the key with "0x01"
+    # дополнение до 16
     if len(key_symbols) < 4 * nk:
         for i in range(4 * nk - len(key_symbols)):
             key_symbols.append(0x01)
 
-    # make ChipherKey(which is base of KeySchedule)
+    # база
     key_schedule = [[] for _ in range(4)]
     for r in range(4):
         for c in range(nk):
             key_schedule[r].append(key_symbols[r + 4 * c])
-    # Comtinue to fill KeySchedule
-    for col in range(nk, nb * (nr + 1)):  # col - column number
+
+    # дозаполнение таблицы
+    for col in range(nk, nb * (nr + 1)):
         if col % nk == 0:
-            # take shifted (col - 1)th column...
             tmp = [key_schedule[row][col - 1] for row in range(1, 4)]
             tmp.append(key_schedule[0][col - 1])
-            # change its elements using Sbox-table like in SubBytes...
             for j in range(len(tmp)):
                 sbox_row = tmp[j] // 0x10
                 sbox_col = tmp[j] % 0x10
                 sbox_elem = AES.s_box[16 * sbox_row + sbox_col]
                 tmp[j] = sbox_elem
 
-            # and finally make XOR of 3 columns
+            # xor трёх колонок
             for row in range(4):
                 s = key_schedule[row][col - 4] ^ tmp[row] ^ AES.r_con[col // nk - 1][row]
                 key_schedule[row].append(s)
 
         else:
-            # just make XOR of 2 columns
+            # xor двух колонок
             for row in range(4):
                 s = key_schedule[row][col - 4] ^ key_schedule[row][col - 1]
                 key_schedule[row].append(s)
@@ -127,6 +125,7 @@ def key_expansion(key):
     return key_schedule
 
 
+# замена байтов из state на байты из s_box
 def sub_bytes(state, inv=False):
     if not inv:
         box = AES.s_box
@@ -145,6 +144,7 @@ def sub_bytes(state, inv=False):
     return state
 
 
+# сдвиг списка влево
 def left_shift(arr, count):
     for i in range(count):
         t = arr.pop(0)
@@ -152,10 +152,11 @@ def left_shift(arr, count):
     return arr
 
 
+# сдвиг списка вправо
 def right_shift(arr, count):
     for i in range(count):
         t = arr.pop(len(arr) - 1)
-        arr = t + arr
+        arr = [t, ] + arr
     return arr
 
 
@@ -274,22 +275,36 @@ def encrypt(input_bytes, key):
     return output
 
 
-# class AESMessage:
-#     def __init__(self, message):
-#         self.message = message
-#         self.state_list = []
-#         for k in range(0, BLOCK_SIZE // STATE_SIZE):
-#             big_state = []
-#             for i in range(k * STATE_SIZE, (k + 1) * STATE_SIZE, nb):
-#                 t = []
-#                 for j in self.message[i:i + nb]:
-#                     t.append(j)
-#                 big_state.append(t)
-#             self.state_list.append(big_state)
-#         print(self.state_list)
-#
-#     def __str__(self):
-#         return str(self.message_list)
+def decrypt(cipher, key):
+    # let's prepare our algorithm enter data: State array and KeySchedule
+    state = [[] for i in range(nb)]
+    for r in range(4):
+        for c in range(nb):
+            state[r].append(cipher[r + 4 * c])
+
+    key_schedule = key_expansion(key)
+
+    state = add_round_key(state, key_schedule, nr)
+
+    rnd = nr - 1
+    while rnd >= 1:
+        state = shift_rows(state, inv=True)
+        state = sub_bytes(state, inv=True)
+        state = add_round_key(state, key_schedule, rnd)
+        state = mix_columns(state, inv=True)
+
+        rnd -= 1
+
+    state = shift_rows(state, inv=True)
+    state = sub_bytes(state, inv=True)
+    state = add_round_key(state, key_schedule, rnd)
+
+    output = [None for i in range(4 * nb)]
+    for r in range(4):
+        for c in range(nb):
+            output[r + 4 * c] = state[r][c]
+
+    return output
 
 
 if __name__ == '__main__':
