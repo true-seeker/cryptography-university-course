@@ -1,7 +1,5 @@
-from bitarray import bitarray
-import PIL.Image as Image
 from PIL import ImageFile
-import io
+from bitarray import bitarray
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -49,7 +47,7 @@ def decrypt(filename):
     # считывание длины сообщения
     for k in range(MESSAGE_LENGTH_SIZE):
         message_length_bits.append(file_bits[len(file_bits) - 1 - (k * 8 + BITS_OFFSET)])
-    message_length = int(message_length_bits.tobytes().replace(b'\x00', b''))
+    message_length = int(message_length_bits.tobytes().replace(b'\x00', b'').replace(b'\xd0', b''))
 
     # считывание сообщения
     for k in range(message_length):
@@ -58,7 +56,35 @@ def decrypt(filename):
     return message_bits.tobytes().decode()
 
 
-message = 'I HATE TERRAGROUP'
+message = '''Эмалированное судно
+            Окошко, тумбочка, кровать
+            Жить тяжело и неуютно
+            Зато уютно умирать
+            Эмалированное судно
+            Окошко, тумбочка, кровать
+            Жить тяжело и неуютно
+            Зато уютно умирать
+            И тихо капает из крана
+            И жизнь растрёпана, как блядь
+            Выходит как бы из тумана
+            И видит: тумбочка, кровать
+            И я пытаюсь приподняться
+            Хочу в глаза ей поглядеть
+            Взглянуть в глаза и разрыдаться
+            И никогда не умереть
+            Никогда не умереть
+            Никогда не умереть
+            Никогда не умереть
+            Никогда не умереть
+            Никогда не умереть
+            Эмалированное судно
+            Окошко, тумбочка, кровать
+            Жить тяжело и неуютно
+            Зато уютно умирать
+            Эмалированное судно
+            Окошко, тумбочка, кровать
+            Жить тяжело и неуютно
+            Зато уютно умирать'''
 op_filename = 'encrypted.bmp'
 
 encrypt('gosling.bmp', op_filename, message)
