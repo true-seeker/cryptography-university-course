@@ -1,9 +1,5 @@
 from bitarray import bitarray
-import PIL.Image as Image
-from PIL import ImageFile
-import io
 
-ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 MAX_MESSAGE_SIZE = 10000
 MESSAGE_LENGTH_SIZE = 32
