@@ -68,6 +68,7 @@ class AES:
 
     def __init__(self, message, key):
         assert len(key) == KEY_SIZE
+
         self.key = key
         self.raw_messages_list = list_division(message, BLOCK_SIZE)
         self.message_list = []
@@ -76,13 +77,14 @@ class AES:
             for j in i:
                 t.append(ord(j))
             self.message_list.append(t)
-        print(self.message_list)
+
         for mes in self.message_list:
-            print(mes)
-            abobus = encrypt(mes, self.key)
-            print(abobus)
-            amogus = decrypt(abobus, self.key)
-            print(amogus)
+            print(f'message: {mes}')
+            encrypted = encrypt(mes, self.key)
+            print(f'encrypted: {encrypted}')
+            decrypted = decrypt(encrypted, self.key)
+            print(f'decrypted: {decrypted}')
+            print(f'message == decrypted: {mes == decrypted}')
             print()
 
 
@@ -137,7 +139,6 @@ def sub_bytes(state, inv=False):
             row = state[i][j] // 0x10
             col = state[i][j] % 0x10
 
-            # Our Sbox is a flat array, not a bable. So, we use this trich to find elem:
             box_elem = box[16 * row + col]
             state[i][j] = box_elem
 
@@ -160,6 +161,7 @@ def right_shift(arr, count):
     return arr
 
 
+# циклический сдвиг
 def shift_rows(state, inv=False):
     count = 1
 
@@ -175,7 +177,7 @@ def shift_rows(state, inv=False):
     return state
 
 
-def mul_by_02(num):
+def m2(num):
     if num < 0x80:
         res = (num << 1)
     else:
@@ -184,43 +186,40 @@ def mul_by_02(num):
     return res % 0x100
 
 
-def mul_by_03(num):
-    return mul_by_02(num) ^ num
+def m3(num):
+    return m2(num) ^ num
 
 
-def mul_by_09(num):
-    # return mul_by_03(num)^mul_by_03(num)^mul_by_03(num) - works wrong, I don't know why
-    return mul_by_02(mul_by_02(mul_by_02(num))) ^ num
+def m9(num):
+    return m2(m2(m2(num))) ^ num
 
 
-def mul_by_0b(num):
-    # return mul_by_09(num)^mul_by_02(num)
-    return mul_by_02(mul_by_02(mul_by_02(num))) ^ mul_by_02(num) ^ num
+def mb(num):
+    return m2(m2(m2(num))) ^ m2(num) ^ num
 
 
-def mul_by_0d(num):
-    # return mul_by_0b(num)^mul_by_02(num)
-    return mul_by_02(mul_by_02(mul_by_02(num))) ^ mul_by_02(mul_by_02(num)) ^ num
+def md(num):
+    return m2(m2(m2(num))) ^ m2(m2(num)) ^ num
 
 
-def mul_by_0e(num):
-    # return mul_by_0d(num)^num
-    return mul_by_02(mul_by_02(mul_by_02(num))) ^ mul_by_02(mul_by_02(num)) ^ mul_by_02(num)
+def me(num):
+    return m2(m2(m2(num))) ^ m2(m2(num)) ^ m2(num)
 
 
+# каждая колонка в state представляется в виде многочлена и перемножается в поле GF(28)
+# по модулю x4 + 1 с фиксированным многочленом 3x3 + x2 + x + 2.
 def mix_columns(state, inv=False):
     for i in range(nb):
-
-        if inv == False:  # encryption
-            s0 = mul_by_02(state[0][i]) ^ mul_by_03(state[1][i]) ^ state[2][i] ^ state[3][i]
-            s1 = state[0][i] ^ mul_by_02(state[1][i]) ^ mul_by_03(state[2][i]) ^ state[3][i]
-            s2 = state[0][i] ^ state[1][i] ^ mul_by_02(state[2][i]) ^ mul_by_03(state[3][i])
-            s3 = mul_by_03(state[0][i]) ^ state[1][i] ^ state[2][i] ^ mul_by_02(state[3][i])
-        else:  # decryption
-            s0 = mul_by_0e(state[0][i]) ^ mul_by_0b(state[1][i]) ^ mul_by_0d(state[2][i]) ^ mul_by_09(state[3][i])
-            s1 = mul_by_09(state[0][i]) ^ mul_by_0e(state[1][i]) ^ mul_by_0b(state[2][i]) ^ mul_by_0d(state[3][i])
-            s2 = mul_by_0d(state[0][i]) ^ mul_by_09(state[1][i]) ^ mul_by_0e(state[2][i]) ^ mul_by_0b(state[3][i])
-            s3 = mul_by_0b(state[0][i]) ^ mul_by_0d(state[1][i]) ^ mul_by_09(state[2][i]) ^ mul_by_0e(state[3][i])
+        if not inv:  # шифрование
+            s0 = m2(state[0][i]) ^ m3(state[1][i]) ^ state[2][i] ^ state[3][i]
+            s1 = state[0][i] ^ m2(state[1][i]) ^ m3(state[2][i]) ^ state[3][i]
+            s2 = state[0][i] ^ state[1][i] ^ m2(state[2][i]) ^ m3(state[3][i])
+            s3 = m3(state[0][i]) ^ state[1][i] ^ state[2][i] ^ m2(state[3][i])
+        else:  # расшифрование
+            s0 = me(state[0][i]) ^ mb(state[1][i]) ^ md(state[2][i]) ^ m9(state[3][i])
+            s1 = m9(state[0][i]) ^ me(state[1][i]) ^ mb(state[2][i]) ^ md(state[3][i])
+            s2 = md(state[0][i]) ^ m9(state[1][i]) ^ me(state[2][i]) ^ mb(state[3][i])
+            s3 = mb(state[0][i]) ^ md(state[1][i]) ^ m9(state[2][i]) ^ me(state[3][i])
 
         state[0][i] = s0
         state[1][i] = s1
@@ -230,9 +229,9 @@ def mix_columns(state, inv=False):
     return state
 
 
+# побитовый xor каждого элемента из state с соответствующим элементом из round_key
 def add_round_key(state, key_schedule, round=0):
     for col in range(nk):
-        # nb*round is a shift which indicates start of a part of the KeySchedule
         s0 = state[0][col] ^ key_schedule[0][nb * round + col]
         s1 = state[1][col] ^ key_schedule[1][nb * round + col]
         s2 = state[2][col] ^ key_schedule[2][nb * round + col]
@@ -247,7 +246,6 @@ def add_round_key(state, key_schedule, round=0):
 
 
 def encrypt(input_bytes, key):
-    # let's prepare our input data: State array and KeySchedule
     state = [[] for _ in range(4)]
     for r in range(4):
         for c in range(nb):
@@ -276,8 +274,7 @@ def encrypt(input_bytes, key):
 
 
 def decrypt(cipher, key):
-    # let's prepare our algorithm enter data: State array and KeySchedule
-    state = [[] for i in range(nb)]
+    state = [[] for _ in range(nb)]
     for r in range(4):
         for c in range(nb):
             state[r].append(cipher[r + 4 * c])
@@ -299,7 +296,7 @@ def decrypt(cipher, key):
     state = sub_bytes(state, inv=True)
     state = add_round_key(state, key_schedule, rnd)
 
-    output = [None for i in range(4 * nb)]
+    output = [None for _ in range(4 * nb)]
     for r in range(4):
         for c in range(nb):
             output[r + 4 * c] = state[r][c]
@@ -308,6 +305,6 @@ def decrypt(cipher, key):
 
 
 if __name__ == '__main__':
-    message = 'abobus_mega_sus hamburger cheeseburger big mack wopper'
+    message = 'some message hehehehehehe'
     key = '12345678901234567890123456789012'
     AES(message, key)
