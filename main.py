@@ -1,3 +1,4 @@
+import math
 import random
 import string
 
@@ -31,11 +32,13 @@ natural_language_probabilities = {
 }
 
 
-def calculate_text_index(text, f):
+def calculate_text_index(f):
     xi = 0
-    for i in text:
-        if i not in natural_language_probabilities:
-            continue
+    # for i in text:
+    #     if i not in natural_language_probabilities:
+    #         continue
+    #     xi += natural_language_probabilities[i] * f[i]
+    for i in string.ascii_lowercase:
         xi += natural_language_probabilities[i] * f[i]
     return xi
 
@@ -43,34 +46,32 @@ def calculate_text_index(text, f):
 def generate_random_key():
     a = list(string.ascii_lowercase)
     random.shuffle(a)
-    return ''.join(a)
+    return a
 
 
 def calculate_text_probabilities(text):
-    letter_count = {}
+    letter_count = {i: 0 for i in natural_language_probabilities}
     text_length = len(text)
     for i in text:
         if i not in natural_language_probabilities:
             text_length -= 1
             continue
-        if letter_count.get(i) is None:
-            letter_count[i] = 1
-        else:
-            letter_count[i] += 1
-    letter_probabilities = {key: value / text_length for key, value in zip(letter_count, letter_count.values())}
 
+        letter_count[i] += 1
+
+    letter_probabilities = {key: value / text_length for key, value in zip(letter_count, letter_count.values())}
     return letter_probabilities
 
 
-def map_key(key: str):
+def map_key(key: list) -> dict:
     mapped_key = {}
     for i, j in zip(string.ascii_lowercase, key):
-        mapped_key[i] = j
+        mapped_key[j] = i
 
     return mapped_key
 
 
-def decrypt_text(text, key):
+def decrypt_text(text: str, key: list) -> str:
     decrypted = ''
     key = map_key(key)
     for i in text:
@@ -81,26 +82,44 @@ def decrypt_text(text, key):
     return decrypted
 
 
+def mutate_key(key: list) -> list:
+    pos_a = random.randint(0, len(key) - 1)
+    pos_b = random.randint(0, len(key) - 1)
+    if pos_a == pos_b:
+        return mutate_key(key)
+
+    key[pos_a], key[pos_b] = key[pos_b], key[pos_a]
+
+    return key
+
+
 if __name__ == '__main__':
     text = ''
     with open('text.txt', 'r') as f:
         for i in f:
             text += i.lower()
+    test_key = 'vbcxznmlkjhgfdsawqertyuiop'
+    decrypt_test = decrypt_text(text, test_key)
+    test_prob = calculate_text_probabilities(decrypt_test)
+    test_xi = calculate_text_index(test_prob)
+    print(test_xi)
 
-    max_xi = 0
-    current_xi = 0.01
+    current_xi = 0
+    max_xi = current_xi
+
     saved_key = None
+    random_key = generate_random_key()
+    # random_key = [i for i in test_key]
     while True:
+        # random_key = mutate_key(random_key)
         random_key = generate_random_key()
         decrypted_text = decrypt_text(text, random_key)
         text_probabilities = calculate_text_probabilities(decrypted_text)
-        current_xi = calculate_text_index(decrypted_text, text_probabilities)
+        current_xi = calculate_text_index(text_probabilities)
         if current_xi > max_xi:
-            max_xi = current_xi
-            saved_key = random_key
-            print(max_xi, saved_key)
-            print(decrypted_text[0:100])
-        elif current_xi == max_xi:
-            break
+                print(1, current_xi, random_key, decrypted_text[0:100])
+                saved_key = list(random_key)
+                max_xi = current_xi
 
     print(saved_key)
+    print(decrypt_text(text, saved_key)[0:100])
