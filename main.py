@@ -187,37 +187,41 @@ def solve_key_part(p, key_part):
 
 
 if __name__ == '__main__':
-    for i in range(500):
-        random_message = list(0 for _ in range(16))
-        random_key = [random.randint(0, 255) for _ in range(32)]
-        kz = gost2015(random_key)
-        k1 = random_key[:16]
-        k2 = random_key[16:]
-        print('K1', k1)
-        print('K2', k2)
+    random_message = list(0 for _ in range(16))
+    random_key = [random.randint(0, 255) for _ in range(32)]
+    kz = gost2015(random_key)
+    k1 = random_key[:16]
+    k2 = random_key[16:]
+    print('K1', k1)
+    print('K2', k2)
 
-        solved_k1 = [None for _ in range(16)]
-        solved_k2 = [None for _ in range(16)]
-        # Перебираем 16 байтов сообщения для нахождения K1
-        for i in range(16):
-            for j in range(256):
-                j_str = hex(j).removeprefix('0x')
-                random_message[i] = int(j_str, 16)
+    solved_k1 = [None for _ in range(16)]
+    solved_k2 = [None for _ in range(16)]
+    # Перебираем 16 байтов сообщения для нахождения K1
+    for i in range(16):
+        for j in range(256):
+            j_str = hex(j).removeprefix('0x')
+            random_message[i] = int(j_str, 16)
 
-                # Первый раунд
-                x_transformation = kz.xtransformation(random_message, k1)
-                s_transformation = kz.stransformation(x_transformation)
-                for index, st in enumerate(s_transformation):
-                    if st == 0:
-                        solved_k1[index] = solve_key_part(random_message[index], st)
-                l_transformation = kz.ltransformation(s_transformation)
+            # Первый раунд
+            x_transformation = kz.xtransformation(random_message, k1)
+            s_transformation = kz.stransformation(x_transformation)
+            # if s_transformation[i] == 0:
+            #     solved_k1[i] = solve_key_part(random_message[i], s_transformation[i])
 
-                # Второй раунд
-                x_transformation = kz.xtransformation(l_transformation, k2)
-                s_transformation = kz.stransformation(x_transformation)
-                for index, st in enumerate(s_transformation):
-                    if st == 0:
-                        solved_k2[index] = solve_key_part(l_transformation[index], st)
+            for index, st in enumerate(s_transformation):
+                if st == 0:
+                    solved_k1[index] = solve_key_part(random_message[index], st)
+            l_transformation = kz.ltransformation(s_transformation)
 
-        assert solved_k1 == k1
-        assert solved_k2 == k2
+            # Второй раунд
+            x_transformation = kz.xtransformation(l_transformation, k2)
+            s_transformation = kz.stransformation(x_transformation)
+            # if s_transformation[i] == 0:
+            #     solved_k2[i] = solve_key_part(random_message[i], s_transformation[i])
+            for index, st in enumerate(s_transformation):
+                if st == 0:
+                    solved_k2[index] = solve_key_part(l_transformation[index], st)
+
+    assert solved_k1 == k1
+    assert solved_k2 == k2
