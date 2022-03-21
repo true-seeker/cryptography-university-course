@@ -1,0 +1,91 @@
+    class FEAL4
+    {
+        private byte G0(byte a, byte b)
+        {
+            return (byte)((((a + b) % 256) << 2) | (((a + b) % 256) >> 6));
+        }
+
+        private byte G1(byte a, byte b)
+        {
+            return (byte)((((a + b+1) % 256) << 2) | (((a + b+1) % 256) >> 6));
+        }
+
+        public byte[] F(byte[] x)
+        {
+            byte[] y = new byte[4];
+            y[1] = G1((byte)(x[0] ^ x[1]), (byte)(x[2] ^ x[3]));
+            y[0] = G0(x[0], y[1]);
+            y[2] = G0(y[1], (byte)(x[2] ^ x[3]));
+            y[3] = G1(y[2], x[3]);
+            return y;
+        }
+
+        private void AddKeyPart(byte[] P, byte[] K)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                P[i] = (byte)(P[i] ^ K[i]);
+            }
+        }
+
+        private byte[] XOR(byte[] a, byte[] b)
+        {
+            byte[] c=new byte[a.Length];
+            for (int i = 0; i < c.Length; i++)
+            {
+                c[i] = (byte)(a[i] ^ b[i]);
+            }
+            return c;
+        }
+        public byte[] Encrypt(byte[] P, byte[][] K)
+        {
+            byte[] LeftPart = new byte[4];
+            byte[] RightPart = new byte[4];
+            Array.Copy(P, 0, LeftPart, 0, 4);
+            Array.Copy(P, 4, RightPart, 0, 4);
+            AddKeyPart(LeftPart, K[4]);
+            AddKeyPart(RightPart, K[5]);
+            byte[] Round2Left = XOR(LeftPart, RightPart);
+            byte[] Round2Right = XOR(LeftPart, F(XOR(Round2Left, K[0])));
+            byte[] Round3Left = Round2Right;
+            byte[] Round3Right = XOR(Round2Left,F(XOR(Round2Right,K[1])));
+            byte[] Round4Left = Round3Right;
+            byte[] Round4Right = XOR(Round3Left, F(XOR(Round3Right, K[2])));
+
+            byte[] CipherTextLeft = XOR(Round4Left,F(XOR(Round4Right,K[3])));
+            byte[] CipherTextRight = XOR(Round4Right, CipherTextLeft);
+            byte[] CipherText = new byte[8];
+            Array.Copy(CipherTextLeft, 0, CipherText, 0, 4);
+            Array.Copy(CipherTextRight, 0, CipherText, 4, 4);
+            return CipherText;
+        }
+
+        public byte[] Decrypt(byte[] P, byte[][] K)
+        {
+            byte[] LeftPart = new byte[4];
+            byte[] RightPart = new byte[4];
+            Array.Copy(P, 0, LeftPart, 0, 4);
+            Array.Copy(P, 4, RightPart, 0, 4);
+
+            byte[] Round4Right = XOR(LeftPart, RightPart);
+            byte[] Round4Left = XOR(LeftPart, F(XOR(Round4Right, K[3])));
+
+            byte[] Round3Right = Round4Left;
+            byte[] Round3Left = XOR(Round4Right, F(XOR(Round3Right, K[2])));
+
+            byte[] Round2Right = Round3Left;
+            byte[] Round2Left = XOR(Round3Right, F(XOR(Round2Right, K[1])));
+
+            byte[] Round1Right = Round2Left;
+            byte[] Round1Left = XOR(Round2Right, F(XOR(Round1Right, K[0])));
+
+            byte[] TextLeft = Round1Left;
+            byte[] TextRight = XOR(Round1Left,Round1Right);
+            AddKeyPart(TextLeft, K[4]);
+            AddKeyPart(TextRight, K[5]);
+            byte[] Text = new byte[8];
+            Array.Copy(TextLeft, 0, Text, 0, 4);
+            Array.Copy(TextRight, 0, Text, 4, 4);
+            return Text;
+        }
+    }
