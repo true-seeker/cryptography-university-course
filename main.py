@@ -64,13 +64,15 @@ class QuadraticSieve:
         """Поиск факторной базы"""
         primes_list = eratosthenes(k)
         baza = {-1, }
-        baza_P = exp(sqrt(log(n) * log(log(n))))
+        baza_P = exp(sqrt(log(k) * log(log(k))))
 
         for prime in primes_list:
+            if prime > baza_P:
+                break
             m = k % prime
             for i in range(prime):
                 fpw = fast_pow_module(i, 2, prime)
-                if fpw == m and prime <= baza_P:
+                if fpw == m:
                     baza.add(prime)
 
         baza = sorted(baza)
@@ -92,7 +94,7 @@ class QuadraticSieve:
             f = factor(i ** 2 - self.n)
             # проверка являются ли все числа в разложении гладким
             for j in f:
-                if j > 10:
+                if j > 20:
                     break
             else:
                 powers = {}
@@ -146,7 +148,7 @@ class QuadraticSieve:
 
 
 if __name__ == '__main__':
-    n = 5061
+    n = 465485
     q = QuadraticSieve(n)
 
     answer = q.perform()
