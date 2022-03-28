@@ -1,5 +1,5 @@
 from itertools import combinations
-from math import sqrt, floor, exp, log, prod
+from math import sqrt, floor, exp, log, prod, gcd
 
 
 def fast_pow_module(number: int, power: int, module: int) -> int:
@@ -27,14 +27,24 @@ def eratosthenes(n: int) -> list:
     return sieve1
 
 
-def gcd(a: int, b: int) -> int:
-    """Алгоритм Евклида для НОД"""
-    while a != b:
-        if a > b:
-            a = a - b
-        else:
-            b = b - a
-    return a
+# def gcd(a: int, b: int) -> int:
+#     print(a, b)
+#     is_neg = False
+#     if a < 0:
+#         is_neg = not is_neg
+#         a = -a
+#     if b < 0:
+#         is_neg = not is_neg
+#         b = -b
+#     """Алгоритм Евклида для НОД"""
+#     while a != b:
+#         if a > b:
+#             a = a - b
+#         else:
+#             b = b - a
+#     # if is_neg:
+#     #     a = -a
+#     return a
 
 
 def factor(n) -> list:
@@ -93,17 +103,18 @@ class QuadraticSieve:
         for i in range(self.small_n // 5, self.small_n * 5):
             f = factor(i ** 2 - self.n)
             # проверка являются ли все числа в разложении гладким
+            all_smooth = len(f) > 0
             for j in f:
-                if j > 20:
+                if j > 100:
+                    all_smooth = False
                     break
-            else:
+            if all_smooth:
                 powers = {}
                 for j in f:
                     if powers.get(j) is not None:
                         powers[j] += 1
                     else:
                         powers[j] = 1
-
                 vector = []
                 # составление xor вектора
                 for j in factor_base:
@@ -114,23 +125,24 @@ class QuadraticSieve:
                             vector.append(0)
                         else:
                             vector.append(1)
-
+                # print(vector)
                 smooth_q[i] = powers
                 xor_vector[i] = vector
-
         # выполнение xor над векторами
         for i in range(1, len(xor_vector)):
-            for combination in set(combinations(xor_vector, i)):
+
+            for combination in combinations(xor_vector, i):
                 xor = [0 for _ in range(len(factor_base))]
                 for key in combination:
                     for index, item in enumerate(xor_vector[key]):
                         xor[index] += item
-
                 # если в xor есть хотя бы одно нечетное, то пропускаем
+                all_odd = True
                 for j in xor:
                     if j % 2 == 1:
+                        all_odd = False
                         break
-                else:
+                if all_odd:
                     x = prod(combination)
                     y = 1
                     # перемножаем степени для y
@@ -139,16 +151,17 @@ class QuadraticSieve:
                             if smooth_q[j].get(factor_base[index]) is not None:
                                 y *= factor_base[index] ** smooth_q[j][factor_base[index]]
                     y = int(sqrt(y))
-
                     a = gcd(x + y, self.n)
                     b = gcd(x - y, self.n)
+
                     if a * b == self.n and a != self.n and b != self.n:
-                        answer.add((a, b))
+                        return (a, b)
+                        # answer.add((a, b))
         return answer
 
 
 if __name__ == '__main__':
-    n = 465485
+    n = 69029 * 983  # 101x103, 997x6421, 3299x2647
     q = QuadraticSieve(n)
 
     answer = q.perform()
