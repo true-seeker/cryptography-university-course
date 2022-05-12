@@ -3,7 +3,7 @@ from math import gcd as bltin_gcd
 
 from Crypto.Util import number
 
-from fast_power import fast_pow_module
+import base64
 
 LENGTH = 3
 
@@ -91,24 +91,24 @@ def sign(message):
 
     g = prime_root(p)
 
-    y = fast_pow_module(g, x, p)
+    y = pow(g, x, p)
 
-    r = fast_pow_module(g, k, p)
+    r = pow(g, k, p)
 
     k_minus_one = modinv(k, p - 1)
 
     s = ((m - x * r) * modinv(k, p - 1)) % (p - 1)
 
     m = my_hash(message, p - 1)
-    print('p', p)
-    print('m', m)
-    print('k', k)
-    print('x', x)
-    print('g', g)
-    print('y', y)
-    print('r', r)
-    print('k^-1', k_minus_one)
-    print('s', s)
+    # print('p', p)
+    # print('m', m)
+    # print('k', k)
+    # print('x', x)
+    # print('g', g)
+    # print('y', y)
+    # print('r', r)
+    # print('k^-1', k_minus_one)
+    # print('s', s)
     return p, g, y, r, s, m
 
 
@@ -116,64 +116,103 @@ def check_sign(p, g, y, r, s, m):
     # ПРОВЕРКА
     if 0 < r < p and \
             0 < s < p - 1 and \
-            (fast_pow_module(y, r, p) * fast_pow_module(r, s, p)) % p == fast_pow_module(g, m, p):
+            (pow(y, r, p) * pow(r, s, p)) % p == pow(g, m, p):
         return True
     else:
-        print('0<r<p', 0 < r < p, )
-        print('0<s<p-1', 0 < s < p - 1)
-        print((fast_pow_module(y, r, p) * fast_pow_module(r, s, p)) % p == fast_pow_module(g, m, p))
+        # print('0<r<p', 0 < r < p, )
+        # print('0<s<p-1', 0 < s < p - 1)
+        print((pow(y, r, p) * pow(r, s, p)) % p == pow(g, m, p))
         return False
 
 
-def encrypt(message):
-    encrypted = ''
-    p = number.getPrime(LENGTH * 4)
-    g = prime_root(p)
-    x = p + 1
-    while x >= p - 1:
-        x = number.getPrime(LENGTH)
-    y = fast_pow_module(g, x, p)
+def encrypt(message, key, x):
+    encrypted = []
+    y, g, p = key
+    # p = number.getPrime(7)
+    # g = prime_root(p)
+    # x = p + 1
+    # while x >= p - 1:
+    #     x = number.getPrime(LENGTH)
+    # y = pow(g, x, p)
+    # k = -1
+    print(y, g, p, x, sep=', ')
+    for j in range(3, p - 1):
+        if coprime2(j, p - 1):
+            k = j
+            break
 
     for i in message:
-        k = -1
-        for j in range(3, p - 1):
-            if coprime2(j, p - 1):
-                k = j
-                break
-
-        a = fast_pow_module(g, k, p)
-
-        b = (fast_pow_module(y, k, p) * ord(i)) % p
-        encrypted += chr(a) + chr(b)
+        a = pow(g, k, p)
+        # b = (pow(y, k, p) * ord(i)) % p
+        b = (pow(y, k, p) * i) % p
+        encrypted.append(a)
+        encrypted.append(b)
     return encrypted, x, p
 
 
 def decrypt(encrypted, x, p):
-    message = ''
+    message = []
     while len(encrypted) > 0:
         a = encrypted[0]
         b = encrypted[1]
         encrypted = encrypted[2:]
 
-        m = (ord(b) * fast_pow_module(ord(a), p - 1 - x, p)) % p
+        m = (b * pow(a, p - 1 - x, p)) % p
 
-        message += chr(m)
+        message.append(m)
 
     return message
 
 
 if __name__ == '__main__':
-    message_to_sign = 'Hello'
+    a = 10
+    b = 20
+    tt = 100
+    l = 75
+    k = (21, 5, 97)  # 5
+    ka = (116, 3, 127)  # 5
+    kb = (51, 5, 103)  # 7
+    s1 = f'{tt}_{l}_{k}_{b}'.encode()
+    # for i in s1:
+    #     print(i, end=' ')
+    # print()
+    s2 = f'{tt}_{l}_{k}_{a}'.encode()
+    d1, _x1, _p1 = encrypt(s1, ka, 5)
+    d2, _x2, _p2 = encrypt(s2, kb, 7)
+    d1_decrypted = decrypt(d1, _x1, _p1)
+    d2_decrypted = decrypt(d2, _x2, _p2)
 
-    encrypted_message, _x, _p = encrypt(message_to_sign)
-    print('encrypted_message: ', encrypted_message)
+    print('s1:', s1)
+    print('s1: ', [i for i in s1])
+    print('d1: ', d1)
+    print('d1_decrypted:', d1_decrypted)
+    print('d1: ', end='')
+    d1_t = ''
+    for i in d1:
+        print(chr(i), end='')
+        d1_t += chr(i)
 
-    decrypted_message = decrypt(encrypted_message, _x, _p)
-    print('decrypted_message', decrypted_message)
+    print('\n')
+    print('s2:', s2)
+    print('s2: ', [i for i in s2])
+    print('d2: ', d2)
+    print('d2_decrypted:', d2_decrypted)
+    print('d2: ', end='')
+    d2_t = ''
+    for i in d2:
+        d2_t += chr(i)
+        print(chr(i), end='')
+    print()
+    sss = base64.b64encode(d1_t.encode())
+    print(base64.b64decode(sss).decode('utf-8'))
+    print(base64.b64encode(d1_t.encode()).decode(), base64.b64encode(d2_t.encode()).decode('utf-8'), sep='|')
+    # p, g, y, r, s, m = sign(message_to_sign)
+    #
+    # if check_sign(p, g, y, r, s, m):
+    #     print('Подпись успешно проверена')
+    # else:
+    #     raise Exception('Проверка не пройдена')
 
-    p, g, y, r, s, m = sign(message_to_sign)
-
-    if check_sign(p, g, y, r, s, m):
-        print('Подпись успешно проверена')
-    else:
-        raise Exception('Проверка не пройдена')
+'G+C7jRvHqRvHqRvavxvgtJAbzJkb2r8b4KaAG+CvoBvgu40b4KijG+C0kBvgtp0bxYYb4KOzG+C2nRvFhhvgr6Ab3LYbLBvcthvakxvavxvgr6Abx6k='
+'G8u7G8KpG8KpG+C7kRvElhvgsYMb4LuRG+C2uxvVjRvLuxvNqBvElhvcshvgq7wb3p8b3LIb4Ku8G9WNG9a6G+C6lRvWuhs8G+C7kRvVjRvCqQ=='
+'G8u7G8KpG8KpG+C7kRvElhvgsYMb4LuRG+C2uxvVjRvLuxvNqBvElhvcshvgq7wb3p8b3LIb4Ku8G9WNG9a6G+C6lRvWuhs8G+C7kRvVjRvCqQ==|xZfKr8WXwpzFl8KcxZfdpMWX26LFl8q8xZfdpMWXwoLFl9OCxZfKr8WXwrbFl9uixZfCj8WXaMWX25XFl8KPxZdoxZfTgsWXy4nFl9OPxZfLicWXypXFl92kxZfKr8WXwpw='
