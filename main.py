@@ -49,7 +49,7 @@ class SecretKey:
         # print([pow(generator, i, self.n) for i in range(1, self.l + 1)])
         r = random.choice([pow(generator, i, self.n) for i in range(1, self.l + 1)])
         # print(r)
-        y = pow(r, 2 * (self.t + 1 - self.j), self.n)
+        y = pow(r, 2 ** (self.t + 1 - self.j), self.n)
         c = []
         z = r % self.n
         for i in range(self.l):
@@ -80,7 +80,7 @@ class PublicKey:
 
         # print(pow(sign.z, 2 * (self.t + 1 - sign.j), self.n))
         # print(temp)
-        return pow(sign.z, 2 * (self.t + 1 - sign.j), self.n) == temp
+        return pow(sign.z, 2 ** (self.t + 1 - sign.j), self.n) == temp
 
     def __str__(self):
         return f'N: {self.n}, T: {self.t}, PK: {self.lst}'
@@ -105,23 +105,21 @@ def kg(k, l, t):
 
     sk.lst.append([pow(generator, i, n) for i in range(1, l + 1)])
 
-    pk.lst = ([pow(i, 2 * (t + 1), n) for i in sk.lst[0]])
+    pk.lst = ([pow(i, 2 ** (t + 1), n) for i in sk.lst[0]])
 
     return sk, pk
 
 
 if __name__ == '__main__':
-    T = 7
-    l = 10
-    secret_key, public_key = kg(10, l, T)
-    print(f'secret_key: {secret_key}')
+    T = 17
+    l = 20
+    secret_key, public_key = kg(20, l, T)
+    print(f'secret_key: {secret_key}\n')
     print(f'public_key: {public_key}')
     for i in range(T):
         message = random.randint(1, 2 ** 32)
-        # print(f'message: {message}')
 
         sign = secret_key.sign(message)
-        # print(f'sign: {sign}')
-        print(public_key.verify(message, sign))
+        is_verified = public_key.verify(message, sign)
+        print(is_verified)
         secret_key.upd()
-        # print(f'secret_key: {secret_key}')
