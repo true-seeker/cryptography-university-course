@@ -10,7 +10,6 @@ def coprime(a, b):
 m = random.randint(2, 2 ** 16)
 print(f'm: {m}')
 while True:
-
     p = number.getPrime(20)
     ba = random.randint(2, p)
     while not coprime(ba, p):
