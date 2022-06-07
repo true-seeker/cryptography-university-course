@@ -1,4 +1,5 @@
 import random
+
 from Crypto.Util import number
 
 
@@ -57,23 +58,23 @@ class Polynom:
 
 
 if __name__ == '__main__':
-    for _ in range(10):
+    tests_count = 20
+    ok_tests = 0
+    for _ in range(tests_count):
         n = random.randint(3, 100)
         p = number.getPrime(10)
-        # n = 3
-        # p = 13
         pol = Polynom(n, p)
         pol.generate_a()
-        secret_index = random.choice(range(len(pol.a)))
+        # secret_index = random.choice(range(len(pol.a)))
         secret_index = 0
-        # pol.a = [4, 9, 4, 1]
         pol.calculate_points()
         m = n + 1
         random_points = random.sample(pol.points, m)
-        # random_points = [Point(3, 3), Point(8, 12), Point(9, 7), Point(6, 2)]
         secret = pol.build_secret(random_points, secret_index)
 
         if pol.a[secret_index] != secret:
             print(n, p, [str(i) for i in random_points], pol.a, secret)
         else:
-            print(n, p, pol.a[secret_index] == secret)
+            ok_tests += 1
+    print(f'Успешных тестов: {ok_tests}')
+    print(f'Проваленных тестов: {tests_count - ok_tests}')
